@@ -17,3 +17,14 @@ Deny from All
 Order Allow,Deny
 Deny from All
 </Files>
+
+
+# Copied from srweb
+# Allows short URLs for accessing specific threads in the form forum/x-y
+# where x is the forum number and y is the topic number
+RewriteEngine On
+RewriteBase /forum
+
+RewriteCond %{REQUEST_FILENAME}  !-f
+RewriteCond %{REQUEST_URI}       !^(/trac(.*))$
+RewriteRule ^([0-9]+)-([0-9]+)$  viewtopic.php?f=$1&t=$2   [L,QSA]
