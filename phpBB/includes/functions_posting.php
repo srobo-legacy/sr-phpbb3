@@ -1621,6 +1621,12 @@ function delete_post($forum_id, $topic_id, $post_id, &$data)
 	return $next_post_id;
 }
 
+function say_thing($thing) {
+	$fd = fopen("/tmp/hash-srobo", "a");
+	fwrite($fd, "$thing\n");
+	fclose($fd);
+}
+
 /**
 * Submit Post
 * @todo Split up and create lightweight, simple API for this.
@@ -1997,6 +2003,8 @@ function submit_post($mode, $subject, $username, $topic_type, &$poll, &$data, $u
 				'topic_last_post_subject'	=> (string) $subject,
 			);
 		}
+
+		say_thing("'\x02${data['forum_name']}\x02' forum: New post in '\x02${data['topic_title']}\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}");
 
 		unset($sql_data[POSTS_TABLE]['sql']);
 	}
