@@ -2004,7 +2004,7 @@ function submit_post($mode, $subject, $username, $topic_type, &$poll, &$data, $u
 			);
 		}
 
-		say_thing("'\x02${data['forum_name']}\x02' forum: New post in '\x02${data['topic_title']}\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}");
+		say_thing("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}");
 
 		unset($sql_data[POSTS_TABLE]['sql']);
 	}
