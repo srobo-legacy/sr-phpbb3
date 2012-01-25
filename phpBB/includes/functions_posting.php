@@ -16,6 +16,9 @@ if (!defined('IN_PHPBB'))
 	exit;
 }
 
+// SR's pipebot wrapper.
+require_once("{$phpbb_root_path}includes/pipebot/pipebot.php");
+
 /**
 * Fill smiley templates (or just the variables) with smilies, either in a window or inline
 */
@@ -1621,12 +1624,6 @@ function delete_post($forum_id, $topic_id, $post_id, &$data)
 	return $next_post_id;
 }
 
-function say_thing($thing) {
-	$fd = fopen("/tmp/hash-srobo", "a");
-	fwrite($fd, "$thing\n");
-	fclose($fd);
-}
-
 /**
 * Submit Post
 * @todo Split up and create lightweight, simple API for this.
@@ -2004,7 +2001,7 @@ function submit_post($mode, $subject, $username, $topic_type, &$poll, &$data, $u
 			);
 		}
 
-		say_thing("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}?view=unread#unread");
+		Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}?view=unread#unread");
 
 		unset($sql_data[POSTS_TABLE]['sql']);
 	}

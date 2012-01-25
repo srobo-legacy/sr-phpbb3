@@ -1,0 +1,3 @@
+[submodule "phpBB/includes/pipebot"]
+	path = phpBB/includes/pipebot
+	url = git://srobo.org/pipebot.git
