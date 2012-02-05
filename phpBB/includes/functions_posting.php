@@ -2001,7 +2001,7 @@ function submit_post($mode, $subject, $username, $topic_type, &$poll, &$data, $u
 			);
 		}
 
-		Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['forum_id']}-${data['topic_id']}?view=unread#unread");
+		Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['post_id']}");
 
 		unset($sql_data[POSTS_TABLE]['sql']);
 	}

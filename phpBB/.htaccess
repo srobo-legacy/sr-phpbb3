@@ -28,3 +28,4 @@ RewriteBase /forum
 RewriteCond %{REQUEST_FILENAME}  !-f
 RewriteCond %{REQUEST_URI}       !^(/trac(.*))$
 RewriteRule ^([0-9]+)-([0-9]+)$  viewtopic.php?f=$1&t=$2   [L,QSA]
+RewriteRule ^([0-9]+)$           viewtopic.php?p=$1#p$1    [R,L,NE]
