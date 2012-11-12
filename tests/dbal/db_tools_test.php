@@ -3,7 +3,7 @@
 *
 * @package testing
 * @copyright (c) 2011 phpBB Group
-* @license http://opensource.org/licenses/gpl-license.php GNU Public License
+* @license http://opensource.org/licenses/gpl-2.0.php GNU General Public License v2
 *
 */
 
@@ -106,7 +106,7 @@ class phpbb_dbal_db_tools_test extends phpbb_database_test_case
 			'c_bool' => 0,
 			'c_vchar' => '',
 			'c_vchar_size' => '',
-			'c_char_size' => '',
+			'c_char_size' => 'abcd',
 			'c_xstext' => '',
 			'c_stext' => '',
 			'c_text' => '',
@@ -165,6 +165,11 @@ class phpbb_dbal_db_tools_test extends phpbb_database_test_case
 	*/
 	public function test_created_column($column_name, $column_value)
 	{
+		if ($column_name === 'c_varbinary' && stripos(get_class($this->db), 'mysql') === false)
+		{
+			$this->markTestIncomplete('Binary handling is not implemented properly on non-MySQL DBMSes.');
+		}
+
 		$row_insert = self::get_default_values();
 		$row_insert[$column_name] = $column_value;
 
@@ -189,49 +194,12 @@ class phpbb_dbal_db_tools_test extends phpbb_database_test_case
 		$this->assertEquals($row_expect[$column_name], $row_actual[$column_name], "Column $column_name of type $type should have equal return and input value.");
 	}
 
-	public function test_auto_increment()
+	public function test_list_columns()
 	{
-		$sql = 'DELETE FROM prefix_table_name';
-		$result = $this->db->sql_query($sql);
-
-		$row1 = array_merge(self::get_default_values(), array(
-			'c_uint' => 1,
-			'c_vchar' => '1', // these values are necessary to avoid unique index issues
-			'c_vchar_size' => '1',
-		));
-		$row2 = array_merge(self::get_default_values(), array(
-			'c_uint' => 2,
-			'c_vchar' => '2',
-			'c_vchar_size' => '2',
-		));
-
-		$sql = 'INSERT INTO prefix_table_name ' . $this->db->sql_build_array('INSERT', $row1);
-		$result = $this->db->sql_query($sql);
-		$id1 = $this->db->sql_nextid();
-
-		$sql = 'INSERT INTO prefix_table_name ' . $this->db->sql_build_array('INSERT', $row2);
-		$result = $this->db->sql_query($sql);
-		$id2 = $this->db->sql_nextid();
-
-		$this->assertGreaterThan($id1, $id2, 'Auto increment should increase the id value');
-
-		$sql = "SELECT *
-			FROM prefix_table_name WHERE c_id = $id1";
-		$result = $this->db->sql_query($sql);
-		$row_actual = $this->db->sql_fetchrow($result);
-		$this->db->sql_freeresult($result);
-
-		$row1['c_id'] = $id1;
-		$this->assertEquals($row1, $row_actual);
-
-		$sql = "SELECT *
-			FROM prefix_table_name WHERE c_id = $id2";
-		$result = $this->db->sql_query($sql);
-		$row_actual = $this->db->sql_fetchrow($result);
-		$this->db->sql_freeresult($result);
-
-		$row2['c_id'] = $id2;
-		$this->assertEquals($row2, $row_actual);
+		$this->assertEquals(
+			array_keys($this->table_data['COLUMNS']),
+			array_values($this->tools->sql_list_columns('prefix_table_name'))
+		);
 	}
 
 	public function test_column_exists()
@@ -258,6 +226,13 @@ class phpbb_dbal_db_tools_test extends phpbb_database_test_case
 		$this->assertFalse($this->tools->sql_column_exists('prefix_table_name', 'c_id'));
 	}
 
+	public function test_list_tables()
+	{
+		$tables = $this->tools->sql_list_tables();
+		$this->assertTrue(isset($tables['prefix_table_name']));
+		$this->assertFalse(isset($tables['prefix_does_not_exist']));
+	}
+
 	public function test_table_exists()
 	{
 		$this->assertTrue($this->tools->sql_table_exists('prefix_table_name'));
@@ -271,6 +246,88 @@ class phpbb_dbal_db_tools_test extends phpbb_database_test_case
 				'foo' => array('UINT', 42)))
 		);
 
+		$this->assertTrue($this->tools->sql_table_exists('prefix_test_table'));
+
 		$this->tools->sql_table_drop('prefix_test_table');
+
+		$this->assertFalse($this->tools->sql_table_exists('prefix_test_table'));
+	}
+
+	public function test_peform_schema_changes_drop_tables()
+	{
+		$db_tools = $this->getMock('phpbb_db_tools', array(
+			'sql_table_exists',
+			'sql_table_drop',
+		), array(&$this->db));
+
+		// pretend all tables exist
+		$db_tools->expects($this->any())->method('sql_table_exists')
+			->will($this->returnValue(true));
+
+		// drop tables
+		$db_tools->expects($this->exactly(2))->method('sql_table_drop');
+		$db_tools->expects($this->at(1))->method('sql_table_drop')
+			->with($this->equalTo('dropped_table_1'));
+		$db_tools->expects($this->at(3))->method('sql_table_drop')
+			->with($this->equalTo('dropped_table_2'));
+
+		$db_tools->perform_schema_changes(array(
+			'drop_tables' => array(
+				'dropped_table_1',
+				'dropped_table_2',
+			),
+		));
+	}
+
+	public function test_peform_schema_changes_drop_columns()
+	{
+		$db_tools = $this->getMock('phpbb_db_tools', array(
+			'sql_column_exists',
+			'sql_column_remove',
+		), array(&$this->db));
+
+		// pretend all columns exist
+		$db_tools->expects($this->any())->method('sql_column_exists')
+			->will($this->returnValue(true));
+		$db_tools->expects($this->any())->method('sql_column_exists')
+			->will($this->returnValue(true));
+
+		// drop columns
+		$db_tools->expects($this->exactly(2))->method('sql_column_remove');
+		$db_tools->expects($this->at(1))->method('sql_column_remove')
+			->with($this->equalTo('existing_table'), $this->equalTo('dropped_column_1'));
+		$db_tools->expects($this->at(3))->method('sql_column_remove')
+			->with($this->equalTo('existing_table'), $this->equalTo('dropped_column_2'));
+
+		$db_tools->perform_schema_changes(array(
+			'drop_columns' => array(
+				'existing_table' => array(
+					'dropped_column_1',
+					'dropped_column_2',
+				),
+			),
+		));
+	}
+
+	public function test_index_exists()
+	{
+		$this->assertTrue($this->tools->sql_index_exists('prefix_table_name', 'i_simple'));
+	}
+
+	public function test_unique_index_exists()
+	{
+		$this->assertTrue($this->tools->sql_unique_index_exists('prefix_table_name', 'i_uniq'));
+	}
+
+	public function test_create_index_against_index_exists()
+	{
+		$this->tools->sql_create_index('prefix_table_name', 'fookey', array('c_timestamp', 'c_decimal'));
+		$this->assertTrue($this->tools->sql_index_exists('prefix_table_name', 'fookey'));
+	}
+
+	public function test_create_unique_index_against_unique_index_exists()
+	{
+		$this->tools->sql_create_unique_index('prefix_table_name', 'i_uniq_ts_id', array('c_timestamp', 'c_id'));
+		$this->assertTrue($this->tools->sql_unique_index_exists('prefix_table_name', 'i_uniq_ts_id'));
 	}
 }
