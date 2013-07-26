@@ -2014,9 +2014,12 @@ function submit_post($mode, $subject, $username, $topic_type, &$poll, &$data, $u
 				'topic_last_poster_colour'	=> $user->data['user_colour'],
 				'topic_last_post_subject'	=> (string) $subject,
 			);
+			Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New thread '\x02".html_entity_decode($data['topic_title'])."\x02': http://srobo.org/forum/${data['post_id']}");
 		}
-
-		Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['post_id']}");
+		else
+		{
+			Pipebot::say("'\x02".html_entity_decode($data['forum_name'])."\x02' forum: New post in '\x02".html_entity_decode($data['topic_title'])."\x02' thread: http://srobo.org/forum/${data['post_id']}");
+		}
 
 		unset($sql_data[POSTS_TABLE]['sql']);
 	}
